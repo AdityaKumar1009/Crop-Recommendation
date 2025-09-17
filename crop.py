@@ -53,7 +53,7 @@ def get_irrigation_advice(crop, farm_size, soil_type, growth_stage, soil_moistur
     3. Adjustments based on rainfall or extreme weather.
     4. Practical advice on efficient water use for the soil type.
 
-    Only give facts and practical recommendations in 2-3 lines. Avoid any vague recommendations or suggestions.
+    Only give facts and practical recommendations in 2-3 lines. Avoid any vague recommendations or suggestions or Disclaimer.
     """
 
     response = model.generate_content(prompt)
@@ -83,15 +83,23 @@ soil_moisture = st.slider("Current Soil Moisture (% of field capacity)", 0, 100,
 
 # ---- Get Advice Button ----
 if st.button("💧 Get Irrigation Advice") and crop:
+    # Create markdown weather table
+    weather_table = "| Date | Min Temp (°C) | Max Temp (°C) | Rainfall (mm) | Humidity (%) |\n"
+    weather_table += "|------|----------------|----------------|----------------|---------------|\n"
+
+    for i in range(len(weather_data["daily"]["time"])):
+        date = weather_data["daily"]["time"][i]
+        t_min = weather_data["daily"]["temperature_2m_min"][i]
+        t_max = weather_data["daily"]["temperature_2m_max"][i]
+        rain = weather_data["daily"]["precipitation_sum"][i]
+        humidity = weather_data["daily"]["relative_humidity_2m_mean"][i]
+        weather_table += f"| {date} | {t_min} | {t_max} | {rain} | {humidity} |\n"
+
+    # Show weather forecast table
+    st.subheader("📊 7-Day Weather Forecast")
+    st.markdown(weather_table)
+
+    # Get Gemini's irrigation advice
     advice = get_irrigation_advice(crop, farm_size, soil_type, growth_stage, soil_moisture, weather_data)
     st.subheader("✅ Irrigation Recommendation")
     st.write(advice)
-
-    # Optional: Show Weather Data Summary
-    st.subheader("📆 7-Day Weather Forecast Summary")
-    for i, date in enumerate(weather_data["daily"]["time"]):
-        st.write(
-            f"📅 {date} | 🌡️ {weather_data['daily']['temperature_2m_min'][i]}°C - "
-            f"{weather_data['daily']['temperature_2m_max'][i]}°C | 💧 {weather_data['daily']['precipitation_sum'][i]} mm | "
-            f"💨 Humidity: {weather_data['daily']['relative_humidity_2m_mean'][i]}%"
-        )
